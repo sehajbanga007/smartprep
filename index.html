@@ -73,6 +73,10 @@ pre{overflow:auto;font-size:.8rem;background:#F3F6FB;padding:10px;border-radius:
 
 <script>
 const $ = id => document.getElementById(id);
+// Where the Django API lives. On GitHub Pages it is the Render server;
+// when Django serves this page itself (localhost or Render), it is the same site.
+const RENDER_API = "https://smartprep-api.onrender.com";
+const API_BASE = location.hostname.endsWith("github.io") ? RENDER_API : "";
 // Questions in the local bank per difficulty (see practice/question_bank.py)
 const MAX_BY_DIFFICULTY = {easy:3, medium:3, hard:2};
 let attempt = null, questions = [];
@@ -81,7 +85,9 @@ function showError(msg){ const e=$("err"); e.textContent=msg; e.classList.remove
 function clearError(){ $("err").classList.add("hide"); }
 
 async function api(path, options){
-  const res = await fetch(path, options);
+  let res;
+  try { res = await fetch(API_BASE + path, options); }
+  catch(_) { throw new Error("Could not reach the SmartPrep server. Please try again in a minute."); }
   let data = null;
   try { data = await res.json(); } catch(_) {}
   if(!res.ok){
@@ -119,11 +125,14 @@ function render(){
 }
 
 async function loadTopics(){
+  // Render's free plan sleeps when idle; the first request can take up to a minute.
+  const slow = setTimeout(()=>showError("Waking up the server (free hosting sleeps when idle)... this can take up to a minute."), 3000);
   try{
     const d = await api("/api/topics/");
+    clearTimeout(slow); clearError();
     $("topic").innerHTML = "";
     d.topics.forEach(t=>{ const o=document.createElement("option"); o.textContent=t; $("topic").appendChild(o); });
-  }catch(e){ showError("Could not load topics: "+e.message); }
+  }catch(e){ clearTimeout(slow); showError("Could not load topics: "+e.message); }
 }
 
 $("start").onclick = async ()=>{

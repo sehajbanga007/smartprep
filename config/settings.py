@@ -1,19 +1,33 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "dev-only-insecure-key-do-not-use-in-production"
-DEBUG = True
+# Locally these defaults apply; on Render they come from environment variables.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key-do-not-use-in-production")
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")  # set by Render automatically
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "corsheaders",
     "rest_framework",
     "practice",
 ]
 
-MIDDLEWARE = ["django.middleware.common.CommonMiddleware"]
+MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # must come before CommonMiddleware
+    "django.middleware.common.CommonMiddleware",
+]
+
+# Let the GitHub Pages frontend call this API from the browser.
+CORS_ALLOWED_ORIGINS = ["https://sehajbanga007.github.io"]
+CORS_URLS_REGEX = r"^/api/.*$"
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = []

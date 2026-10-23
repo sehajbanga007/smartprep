@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: smartprep-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # SQLite lives on Render's temporary disk, so tables are (re)created on every start.
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
