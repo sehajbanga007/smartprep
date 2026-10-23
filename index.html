@@ -75,7 +75,7 @@ pre{overflow:auto;font-size:.8rem;background:#F3F6FB;padding:10px;border-radius:
 const $ = id => document.getElementById(id);
 // Where the Django API lives. On GitHub Pages it is the Render server;
 // when Django serves this page itself (localhost or Render), it is the same site.
-const RENDER_API = "https://smartprep-api.onrender.com";
+const RENDER_API = "https://smartprep-api-hbh6.onrender.com";
 const API_BASE = location.hostname.endsWith("github.io") ? RENDER_API : "";
 // Questions in the local bank per difficulty (see practice/question_bank.py)
 const MAX_BY_DIFFICULTY = {easy:3, medium:3, hard:2};
