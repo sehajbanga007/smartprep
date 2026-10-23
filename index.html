@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartPrep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EAEFF5;--card:#fff;--ink:#1B2A41;--muted:#5B6B82;--line:#CBD5E1;--blue:#2F5BEA;--ok:#1F8A5B;--bad:#C23B3B;--okbg:#E6F4EC;--badbg:#FBEAEA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 16px 64px}
+h1,h2{font-family:"Bricolage Grotesque","Public Sans",sans-serif;margin:0}
+h1{font-size:2.4rem;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:4px 0 24px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row label{flex:1 1 150px;font-weight:600;font-size:.9rem}
+select,input{width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+button{font:inherit;font-weight:600;border:0;border-radius:6px;padding:11px 20px;background:var(--blue);color:#fff;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+button.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+:focus-visible{outline:3px solid #9DB4FF;outline-offset:2px}
+.q{border-top:1px solid var(--line);padding:18px 0}
+.q:first-of-type{border-top:0;padding-top:4px}
+.q p{margin:0 0 10px;font-weight:600}
+.opt{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.opt:hover{background:#F3F6FB}
+.opt input{position:absolute;opacity:0;width:0}
+.bub{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.opt input:checked+.bub{background:var(--ink);color:#fff}
+.opt input:focus-visible+.bub{outline:3px solid #9DB4FF;outline-offset:2px}
+.score{font-family:"Bricolage Grotesque",sans-serif;font-size:3rem;line-height:1}
+.res{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:12px}
+.res.ok{background:var(--okbg);border-color:#A9D8BF}
+.res.no{background:var(--badbg);border-color:#EBB5B5}
+.res p{margin:0 0 6px;font-weight:600}
+.res small{display:block;color:var(--muted)}
+.err{background:var(--badbg);border:1px solid #EBB5B5;color:var(--bad);padding:10px 14px;border-radius:8px;margin-bottom:16px}
+.hide{display:none}
+pre{overflow:auto;font-size:.8rem;background:#F3F6FB;padding:10px;border-radius:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1>SmartPrep</h1>
+  <p class="sub">Pick a topic, answer the questions, see your score and explanations.</p>
+  <div id="err" class="err hide" role="alert"></div>
+
+  <section id="setup" class="panel">
+    <div class="row">
+      <label>Topic<select id="topic"></select></label>
+      <label>Difficulty<select id="difficulty"><option>easy</option><option>medium</option><option>hard</option></select></label>
+      <label>Questions<select id="amount"></select></label>
+    </div>
+    <p><button id="start">Start practice</button></p>
+  </section>
+
+  <section id="quiz" class="panel hide">
+    <div id="qs"></div>
+    <button id="submit">Submit answers</button>
+    <p class="sub" id="hint">Unanswered questions count as incorrect.</p>
+  </section>
+
+  <section id="result" class="panel hide">
+    <div class="score" id="score"></div>
+    <div id="details"></div>
+    <details><summary>Raw API response</summary><pre id="raw"></pre></details>
+    <p><button class="ghost" id="again">Practice again</button></p>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+// Questions in the local bank per difficulty (see practice/question_bank.py)
+const MAX_BY_DIFFICULTY = {easy:3, medium:3, hard:2};
+let attempt = null, questions = [];
+
+function showError(msg){ const e=$("err"); e.textContent=msg; e.classList.remove("hide"); }
+function clearError(){ $("err").classList.add("hide"); }
+
+async function api(path, options){
+  const res = await fetch(path, options);
+  let data = null;
+  try { data = await res.json(); } catch(_) {}
+  if(!res.ok){
+    const m = data && data.error && data.error.message;
+    throw new Error(m || ("Request failed (" + res.status + ")"));
+  }
+  return data;
+}
+const post = (path, body) => api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+
+function fillAmounts(){
+  const max = MAX_BY_DIFFICULTY[$("difficulty").value] || 2;
+  const keep = Number($("amount").value) || max;
+  $("amount").innerHTML = "";
+  for(let n=1;n<=max;n++){ const o=document.createElement("option"); o.value=o.textContent=n; $("amount").appendChild(o); }
+  $("amount").value = Math.min(keep, max);
+}
+$("difficulty").onchange = fillAmounts;
+
+// API question: {id, topic, difficulty, question, options:{A:"..",B:"..",C:"..",D:".."}}
+function render(){
+  $("qs").innerHTML = "";
+  questions.forEach((q,n)=>{
+    const d = document.createElement("div"); d.className="q";
+    const p = document.createElement("p"); p.textContent = (n+1)+". "+q.question; d.appendChild(p);
+    Object.entries(q.options).forEach(([key,text])=>{
+      const l = document.createElement("label"); l.className="opt";
+      const r = document.createElement("input"); r.type="radio"; r.name="q"+q.id; r.value=key;
+      const b = document.createElement("span"); b.className="bub"; b.textContent=key;
+      const t = document.createElement("span"); t.textContent=text;
+      l.append(r,b,t); d.appendChild(l);
+    });
+    $("qs").appendChild(d);
+  });
+}
+
+async function loadTopics(){
+  try{
+    const d = await api("/api/topics/");
+    $("topic").innerHTML = "";
+    d.topics.forEach(t=>{ const o=document.createElement("option"); o.textContent=t; $("topic").appendChild(o); });
+  }catch(e){ showError("Could not load topics: "+e.message); }
+}
+
+$("start").onclick = async ()=>{
+  clearError(); $("start").disabled = true;
+  try{
+    const d = await post("/api/practice-sets/", {
+      topic:$("topic").value, difficulty:$("difficulty").value, amount:Number($("amount").value)});
+    attempt = d.attempt_id;
+    questions = d.questions;
+    render();
+    $("setup").classList.add("hide"); $("quiz").classList.remove("hide");
+  }catch(e){ showError(e.message); }
+  $("start").disabled = false;
+};
+
+$("submit").onclick = async ()=>{
+  clearError(); $("submit").disabled = true;
+  const answers = [];
+  questions.forEach(q=>{
+    const c = document.querySelector(`input[name="q${q.id}"]:checked`);
+    if(c) answers.push({question_id:q.id, selected_answer:c.value});
+  });
+  try{
+    await post(`/api/practice-sets/${attempt}/submit/`, {answers});
+    const res = await api(`/api/results/${attempt}/`);
+    showResult(res);
+  }catch(e){ showError(e.message); }
+  $("submit").disabled = false;
+};
+
+// API result: {correct_answers, total_questions, percentage, details:[{question_id, selected_answer, correct_answer, is_correct, explanation}]}
+function showResult(res){
+  $("score").textContent = res.correct_answers + " / " + res.total_questions + "  (" + res.percentage + "%)";
+  const byId = Object.fromEntries(questions.map(q=>[q.id,q]));
+  $("details").innerHTML = "";
+  res.details.forEach((it,i)=>{
+    const q = byId[it.question_id] || {question:"Question "+it.question_id, options:{}};
+    const label = k => k ? k + ") " + (q.options[k] ?? "") : "not answered";
+    const d = document.createElement("div"); d.className = "res " + (it.is_correct ? "ok" : "no");
+    const p = document.createElement("p"); p.textContent = (i+1)+". "+q.question+(it.is_correct?"  ✓":"  ✗");
+    const a = document.createElement("small"); a.textContent = "Your answer: " + label(it.selected_answer);
+    const c = document.createElement("small"); c.textContent = "Correct: " + label(it.correct_answer);
+    const e = document.createElement("small"); e.textContent = it.explanation;
+    d.append(p,a,c,e);
+    $("details").appendChild(d);
+  });
+  $("raw").textContent = JSON.stringify(res, null, 2);
+  $("quiz").classList.add("hide"); $("result").classList.remove("hide");
+  window.scrollTo({top:0});
+}
+
+$("again").onclick = ()=>{
+  clearError(); $("result").classList.add("hide"); $("setup").classList.remove("hide");
+};
+
+fillAmounts();
+loadTopics();
+</script>
+</body>
+</html>
