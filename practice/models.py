@@ -13,6 +13,7 @@ class PracticeAttempt(models.Model):
     STATUS_CHOICES = [(IN_PROGRESS, "In progress"), (COMPLETED, "Completed")]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player_name = models.CharField(max_length=20, default="Anonymous")
     topic = models.CharField(max_length=20)
     difficulty = models.CharField(max_length=10)
     questions = models.JSONField()
@@ -24,9 +25,12 @@ class PracticeAttempt(models.Model):
     details = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    # Measured on the server: completed_at - created_at, so the client cannot fake it.
+    time_taken_seconds = models.FloatField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status", "topic", "difficulty"], name="leaderboard_lookup")]
         constraints = [
             models.CheckConstraint(
                 condition=Q(percentage__isnull=True)

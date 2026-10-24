@@ -58,7 +58,10 @@ def test_retrieve_unknown_and_invalid_ids(api_client):
         {"topic": "Django", "amount": 3},
         {"topic": "Django", "difficulty": "easy"},
         {"topic": "Django", "difficulty": "easy", "amount": 0},
-        {"topic": "Django", "difficulty": "easy", "amount": 11},
+        {"topic": "Django", "difficulty": "easy", "amount": 2},
+        {"topic": "Django", "difficulty": "easy", "amount": 8},
+        {"topic": "Django", "difficulty": "easy", "amount": 3, "player_name": "x" * 21},
+        {"topic": "Django", "difficulty": "easy", "amount": 3, "player_name": "<script>"},
         {"topic": "Django", "difficulty": "easy", "amount": "many"},
         {},
     ],
@@ -78,9 +81,22 @@ def test_create_with_non_object_json(api_client):
     assert_error(api_client.post("/api/practice-sets/", [1, 2], format="json"), 400, "validation_error")
 
 
-def test_insufficient_questions(api_client):
+@pytest.mark.parametrize("amount", [3, 4, 5, 6, 7])
+def test_every_amount_from_3_to_7_works_for_every_difficulty(make_attempt, amount):
+    for difficulty in ("easy", "medium", "hard"):
+        data = make_attempt("Docker", difficulty, amount)
+        assert len(data["questions"]) == amount
+
+
+def test_insufficient_questions(api_client, monkeypatch):
+    from practice.exceptions import InsufficientQuestionsError
+
+    def short(*args, **kwargs):
+        raise InsufficientQuestionsError(2)
+
+    monkeypatch.setattr("practice.services.select_questions", short)
     response = api_client.post(
-        "/api/practice-sets/", {"topic": "Django", "difficulty": "easy", "amount": 10}, format="json"
+        "/api/practice-sets/", {"topic": "Django", "difficulty": "easy", "amount": 5}, format="json"
     )
     assert_error(response, 422, "insufficient_questions")
 

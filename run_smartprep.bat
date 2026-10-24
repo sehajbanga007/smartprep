@@ -1,6 +1,8 @@
 @echo off
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat
+echo === Updating the database ===
+python manage.py migrate --noinput
 echo === Running tests ===
 python -m pytest
 echo.

@@ -3,12 +3,15 @@ import random
 
 import requests
 from django.conf import settings
+from django.db.models import Avg, Count, Q
 
 from . import question_bank
+from .models import COMPLETED, PracticeAttempt
 from .exceptions import ExternalAPIError, InsufficientQuestionsError, InvalidSubmissionError
 
-MIN_AMOUNT = 1
-MAX_AMOUNT = 10
+MIN_AMOUNT = 3
+MAX_AMOUNT = 7
+DEFAULT_PLAYER_NAME = "Anonymous"
 
 
 # ---------- local question bank logic ----------
@@ -79,6 +82,82 @@ def grade_answers(snapshot, answers):
         "incorrect_answers": total - correct,
         "percentage": calculate_percentage(correct, total),
         "details": details,
+    }
+
+
+# ---------- leaderboard and stats ----------
+# Ranking rule: higher percentage first; on a tie, the faster time wins;
+# on a further tie, whoever finished first wins.
+LEADERBOARD_ORDER = ("-percentage", "time_taken_seconds", "completed_at")
+
+
+def clean_player_name(name):
+    name = " ".join((name or "").split())
+    return name or DEFAULT_PLAYER_NAME
+
+
+def time_taken(started, finished):
+    """Seconds between start and finish, rounded to 0.1 s (never negative)."""
+    return max(0.0, round((finished - started).total_seconds(), 1))
+
+
+def leaderboard(topic=None, difficulty=None, limit=10):
+    rows = PracticeAttempt.objects.filter(status=COMPLETED)
+    if topic:
+        rows = rows.filter(topic=topic)
+    if difficulty:
+        rows = rows.filter(difficulty=difficulty)
+    rows = rows.order_by(*LEADERBOARD_ORDER)[:limit]
+    return [
+        {
+            "rank": position,
+            "player_name": row.player_name,
+            "topic": row.topic,
+            "difficulty": row.difficulty,
+            "total_questions": row.total_questions,
+            "correct_answers": row.correct_count,
+            "percentage": row.percentage,
+            "time_taken_seconds": row.time_taken_seconds,
+            "completed_at": row.completed_at.isoformat(),
+        }
+        for position, row in enumerate(rows, start=1)
+    ]
+
+
+def rank_of(attempt):
+    """Position of a completed attempt among all attempts with the same topic and difficulty."""
+    better = PracticeAttempt.objects.filter(
+        status=COMPLETED, topic=attempt.topic, difficulty=attempt.difficulty
+    ).filter(
+        Q(percentage__gt=attempt.percentage)
+        | Q(percentage=attempt.percentage, time_taken_seconds__lt=attempt.time_taken_seconds)
+        | Q(
+            percentage=attempt.percentage,
+            time_taken_seconds=attempt.time_taken_seconds,
+            completed_at__lt=attempt.completed_at,
+        )
+    )
+    total = PracticeAttempt.objects.filter(
+        status=COMPLETED, topic=attempt.topic, difficulty=attempt.difficulty
+    ).count()
+    return better.count() + 1, total
+
+
+def stats():
+    done = PracticeAttempt.objects.filter(status=COMPLETED)
+    summary = done.aggregate(quizzes=Count("id"), average=Avg("percentage"))
+    per_topic = (
+        done.values("topic").annotate(quizzes=Count("id"), average=Avg("percentage")).order_by("-quizzes", "topic")
+    )
+    return {
+        "completed_quizzes": summary["quizzes"],
+        "players": done.values("player_name").distinct().count(),
+        "average_percentage": round(summary["average"], 2) if summary["average"] is not None else None,
+        "questions_in_bank": len(question_bank.QUESTIONS),
+        "by_topic": [
+            {"topic": r["topic"], "quizzes": r["quizzes"], "average_percentage": round(r["average"], 2)}
+            for r in per_topic
+        ],
     }
 
 

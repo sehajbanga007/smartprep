@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from . import services
 from .exceptions import ExternalAPIError, InsufficientQuestionsError, InvalidSubmissionError
 from .models import COMPLETED, IN_PROGRESS, PracticeAttempt
-from .serializers import PracticeSetCreateSerializer, SubmitSerializer
+from .serializers import LeaderboardQuerySerializer, PracticeSetCreateSerializer, SubmitSerializer
 from .services import fetch_trivia_questions
 
 
@@ -33,9 +33,11 @@ def _not_found():
 def _attempt_payload(attempt):
     return {
         "attempt_id": str(attempt.id),
+        "player_name": attempt.player_name,
         "topic": attempt.topic,
         "difficulty": attempt.difficulty,
         "status": attempt.status,
+        "started_at": attempt.created_at.isoformat(),
         "total_questions": attempt.total_questions,
         "question_ids": [q["id"] for q in attempt.questions],
         "questions": [services.public_question(q) for q in attempt.questions],
@@ -43,8 +45,10 @@ def _attempt_payload(attempt):
 
 
 def _result_payload(attempt):
+    rank, ranked = services.rank_of(attempt)
     return {
         "attempt_id": str(attempt.id),
+        "player_name": attempt.player_name,
         "topic": attempt.topic,
         "difficulty": attempt.difficulty,
         "status": attempt.status,
@@ -54,6 +58,9 @@ def _result_payload(attempt):
         "incorrect_answers": attempt.total_questions - attempt.correct_count,
         "percentage": attempt.percentage,
         "completed_at": attempt.completed_at.isoformat() if attempt.completed_at else None,
+        "time_taken_seconds": attempt.time_taken_seconds,
+        "rank": rank,
+        "ranked_attempts": ranked,
         "details": attempt.details,
     }
 
@@ -83,6 +90,7 @@ class PracticeSetCreateView(APIView):
                 422,
             )
         attempt = PracticeAttempt.objects.create(
+            player_name=services.clean_player_name(data.get("player_name")),
             topic=data["topic"],
             difficulty=data["difficulty"],
             questions=questions,
@@ -116,13 +124,15 @@ class SubmitView(APIView):
             return error_response("invalid_submission", str(exc), 400)
 
         # Conditional update: only the first submission can win.
+        now = timezone.now()
         updated = PracticeAttempt.objects.filter(pk=attempt.pk, status=IN_PROGRESS).update(
             status=COMPLETED,
+            time_taken_seconds=services.time_taken(attempt.created_at, now),
             answered_count=result["answered_questions"],
             correct_count=result["correct_answers"],
             percentage=result["percentage"],
             details=result["details"],
-            completed_at=timezone.now(),
+            completed_at=now,
         )
         if not updated:
             return error_response("already_submitted", "This attempt was already submitted.", 409)
@@ -138,6 +148,27 @@ class ResultView(APIView):
         if attempt.status != COMPLETED:
             return error_response("attempt_not_completed", "This attempt has not been submitted yet.", 409)
         return Response(_result_payload(attempt))
+
+
+class LeaderboardView(APIView):
+    def get(self, request):
+        query = LeaderboardQuerySerializer(data=request.query_params)
+        if not query.is_valid():
+            return error_response("validation_error", "Invalid leaderboard filter.", 400, query.errors)
+        data = query.validated_data
+        return Response(
+            {
+                "topic": data.get("topic"),
+                "difficulty": data.get("difficulty"),
+                "ranking": "Highest percentage first; ties go to the faster time.",
+                "entries": services.leaderboard(data.get("topic"), data.get("difficulty"), data["limit"]),
+            }
+        )
+
+
+class StatsView(APIView):
+    def get(self, request):
+        return Response(services.stats())
 
 
 class ExternalTriviaView(APIView):

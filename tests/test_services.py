@@ -26,7 +26,11 @@ def test_select_questions_is_repeatable_with_seeded_rng():
 def test_select_questions_raises_when_not_enough():
     with pytest.raises(InsufficientQuestionsError) as info:
         services.select_questions("Docker", "hard", 10)
-    assert info.value.available == 2
+    assert info.value.available == 7
+
+
+def test_amount_limits_are_3_to_7():
+    assert (services.MIN_AMOUNT, services.MAX_AMOUNT) == (3, 7)
 
 
 def test_list_topics_returns_copy_of_seven_topics():

@@ -82,25 +82,138 @@ _RAW = {
 }
 
 
+# Added in version 2: brings every topic to 7 easy, 7 medium and 7 hard questions,
+# so a practice set can hold 3-7 questions. Appended after _RAW so the original
+# question IDs (1-56) stay the same.
+_RAW_EXTRA = {
+    "HTML": [
+        ("easy", "Which tag creates a hyperlink?", "<a>", ["<link>", "<href>", "<url>"], "<a href=\"...\"> creates a clickable link; <link> connects resources such as stylesheets."),
+        ("easy", "Which tag holds the largest default heading?", "<h1>", ["<h6>", "<head>", "<header>"], "<h1> is the top-level heading and <h6> the smallest."),
+        ("easy", "Which element embeds an image?", "<img>", ["<image>", "<src>", "<pic>"], "<img> with a src attribute embeds an image."),
+        ("easy", "Which tag creates one row in a table?", "<tr>", ["<td>", "<th>", "<row>"], "<tr> is a table row; <td> and <th> are the cells inside it."),
+        ("medium", "Which attribute on <a> opens the link in a new tab?", "target=\"_blank\"", ["rel=\"new\"", "href=\"_new\"", "open=\"tab\""], "target=\"_blank\" opens the link in a new browsing context."),
+        ("medium", "Which element groups related form controls with a border and caption?", "<fieldset>", ["<formgroup>", "<div>", "<span>"], "<fieldset> with a <legend> groups related inputs."),
+        ("medium", "Which meta tag makes a page scale properly on mobile screens?", "<meta name=\"viewport\">", ["<meta name=\"mobile\">", "<meta charset=\"utf-8\">", "<meta name=\"robots\">"], "The viewport meta tag sets width=device-width for responsive layouts."),
+        ("medium", "Which attribute gives an element a unique identifier in the page?", "id", ["class", "name", "key"], "An id must be unique; a class can be shared by many elements."),
+        ("hard", "Which attribute delays loading an image until it is near the viewport?", "loading=\"lazy\"", ["defer", "async", "lazy=\"true\""], "Native lazy loading saves bandwidth for images that are off screen."),
+        ("hard", "Which <script> attributes stop the script from blocking HTML parsing?", "defer and async", ["lazy and eager", "nomodule and nonce", "preload and prefetch"], "Both download in parallel; defer runs after parsing, async as soon as it arrives."),
+        ("hard", "Which attributes store custom data on an element for JavaScript to read?", "data-* attributes", ["custom-* attributes", "js-* attributes", "meta-* attributes"], "data-* values are available through element.dataset."),
+        ("hard", "Which ARIA attribute gives an accessible name to an element with no visible text?", "aria-label", ["aria-hidden", "role", "tabindex"], "Screen readers announce aria-label as the element's name."),
+        ("hard", "Which element lets the browser choose between several image sources by screen size or format?", "<picture>", ["<figure>", "<imgset>", "<gallery>"], "<picture> with <source> children lets the browser pick the best image."),
+    ],
+    "CSS": [
+        ("easy", "Which property sets the background colour of an element?", "background-color", ["bgcolor", "color", "fill"], "background-color paints the element's background."),
+        ("easy", "Which property changes the size of text?", "font-size", ["text-size", "font-weight", "size"], "font-size sets how large the text is."),
+        ("easy", "Which selector targets the element with id=\"header\"?", "#header", [".header", "header", "*header"], "A hash selects by id; a dot selects by class."),
+        ("easy", "Which property adds space outside an element's border?", "margin", ["padding", "border-spacing", "outline"], "Margin is outside the border; padding is inside it."),
+        ("medium", "Which position value keeps an element in place while the page scrolls?", "fixed", ["relative", "static", "absolute"], "position: fixed places the element relative to the viewport."),
+        ("medium", "Which pseudo-class styles an element while the mouse is over it?", ":hover", [":active", ":focus", ":visited"], ":hover applies while the pointer is over the element."),
+        ("medium", "Which unit is relative to the root element's font size?", "rem", ["em", "px", "vh"], "rem uses the <html> font size; em uses the parent's."),
+        ("medium", "Which property controls the stacking order of positioned elements?", "z-index", ["order", "stack", "layer"], "Higher z-index values sit on top."),
+        ("hard", "Which CSS feature applies styles only when the screen matches a condition, such as a maximum width?", "Media queries (@media)", ["@import", "@font-face", "@keyframes"], "@media rules are the basis of responsive design."),
+        ("hard", "Which declaration creates a grid with three equal columns?", "grid-template-columns: repeat(3, 1fr)", ["grid-columns: 3", "columns: 3fr", "display: grid-3"], "repeat(3, 1fr) makes three equal fractions of the free space."),
+        ("hard", "How is a CSS custom property declared?", "--main-color: #333;", ["$main-color: #333;", "@main-color: #333;", "var-main-color: #333;"], "Custom properties start with -- and are read with var(--main-color)."),
+        ("hard", "Which property lets a flex item grow to fill free space?", "flex-grow", ["flex-basis", "flex-shrink", "align-self"], "flex-grow sets how much of the free space an item takes."),
+        ("hard", "Which pseudo-element inserts generated content before an element's content?", "::before", [":first-child", "::marker", "::first-line"], "::before with a content property inserts generated content."),
+    ],
+    "JavaScript": [
+        ("easy", "Which method prints a message to the browser console?", "console.log()", ["print()", "document.log()", "window.echo()"], "console.log writes to the developer console."),
+        ("easy", "Which operator joins two strings together?", "+", ["&", "*", "."], "In JavaScript, + concatenates strings."),
+        ("easy", "Which value does a declared but unassigned variable hold?", "undefined", ["null", "0", "NaN"], "Variables start as undefined until a value is assigned."),
+        ("easy", "Which method turns a JSON string into an object?", "JSON.parse()", ["JSON.stringify()", "JSON.toObject()", "Object.fromJSON()"], "JSON.parse reads JSON text; JSON.stringify writes it."),
+        ("medium", "Which array method keeps only the items that pass a test?", "filter()", ["map()", "reduce()", "some()"], "filter returns a new array of the items whose callback returns true."),
+        ("medium", "Which method attaches a click handler to an element?", "addEventListener()", ["onEvent()", "attachHandler()", "listen()"], "element.addEventListener('click', handler) registers the handler."),
+        ("medium", "What does [...a, ...b] produce when a and b are arrays?", "A new array with the items of a followed by b", ["A nested array [a, b]", "The sum of a and b", "A syntax error"], "Spread syntax expands each array's items into the new array."),
+        ("medium", "Which built-in function sends an HTTP request and returns a Promise?", "fetch()", ["request()", "ajax()", "http()"], "fetch is the standard browser API for HTTP requests."),
+        ("hard", "What is a closure?", "A function that keeps access to variables from the scope where it was created", ["A function that closes the browser tab", "A loop that stops early", "A private class field"], "Closures let inner functions use outer variables after the outer function returns."),
+        ("hard", "What does 0.1 + 0.2 === 0.3 evaluate to?", "false", ["true", "undefined", "NaN"], "Floating-point rounding makes 0.1 + 0.2 equal 0.30000000000000004."),
+        ("hard", "After the current script finishes, which callbacks run first?", "Promise callbacks (microtasks)", ["setTimeout callbacks (macrotasks)", "requestAnimationFrame callbacks", "Event listeners added later"], "The microtask queue is emptied before the next macrotask runs."),
+        ("hard", "What does \"use strict\" do?", "Turns on stricter parsing and error checking", ["Makes all variables constant", "Disables all warnings", "Compiles the code to bytecode"], "Strict mode turns silent mistakes into thrown errors."),
+        ("hard", "Which keyword creates a variable that is hoisted with the value undefined?", "var", ["let", "const", "static"], "let and const are hoisted too but stay in the temporal dead zone until declared."),
+    ],
+    "MongoDB": [
+        ("easy", "Which field does MongoDB add automatically as each document's unique key?", "_id", ["id", "key", "uuid"], "Every document has a unique _id, an ObjectId by default."),
+        ("easy", "Which method returns documents from a collection?", "find()", ["getAll()", "select()", "list()"], "find() with an empty filter returns every document."),
+        ("easy", "Which format does MongoDB use to store documents?", "BSON", ["CSV", "XML", "YAML"], "BSON is binary JSON with extra types such as dates."),
+        ("easy", "Which method counts the documents matching a filter?", "countDocuments()", ["size()", "total()", "length()"], "countDocuments(filter) returns the number of matches."),
+        ("medium", "Which query operator matches any value in a given list?", "$in", ["$all", "$or", "$any"], "{ status: { $in: ['a', 'b'] } } matches either value."),
+        ("medium", "Which method sorts query results?", "sort()", ["order()", "orderBy()", "arrange()"], "sort({ field: 1 }) sorts ascending and -1 descending."),
+        ("medium", "Which update operator appends a value to an array field?", "$push", ["$set", "$inc", "$add"], "$push adds an element to the end of an array."),
+        ("medium", "What does find({}, { name: 1 }) return?", "Only the name field (plus _id) of each document", ["Documents sorted by name", "Documents without the name field", "A new index on name"], "The second argument is a projection that picks fields."),
+        ("hard", "Which aggregation stage filters documents like a query?", "$match", ["$project", "$group", "$unwind"], "$match passes on only the documents that meet its condition."),
+        ("hard", "Which aggregation stage joins documents from another collection?", "$lookup", ["$join", "$merge", "$unionWith"], "$lookup performs a left outer join with another collection."),
+        ("hard", "Which aggregation stage outputs one document per element of an array field?", "$unwind", ["$split", "$group", "$flatten"], "$unwind deconstructs an array into separate documents."),
+        ("hard", "What is a replica set?", "A group of servers that keep copies of the same data", ["A set of indexes", "A folder of backups", "A shard key"], "Replica sets give redundancy and automatic failover."),
+        ("hard", "What is sharding in MongoDB?", "Splitting data across several servers by a shard key", ["Copying data to a backup server", "Compressing documents", "Encrypting a collection"], "Sharding spreads data and load horizontally."),
+    ],
+    "NoSQL": [
+        ("easy", "What do most document databases store records as?", "JSON-like documents", ["Fixed-width text lines", "Spreadsheet cells", "Image files"], "Document stores keep each record as a JSON-like document."),
+        ("easy", "Which NoSQL type stores data as key and value pairs?", "Key-value store", ["Graph database", "Relational database", "Document database"], "A key-value store looks up each value by its key."),
+        ("easy", "Which of these is a wide-column store?", "Apache Cassandra", ["Redis", "Neo4j", "MongoDB"], "Cassandra groups data into column families."),
+        ("easy", "Which of these is a graph database?", "Neo4j", ["Cassandra", "Redis", "DynamoDB"], "Neo4j stores nodes and the relationships between them."),
+        ("medium", "What does BASE stand for in NoSQL?", "Basically Available, Soft state, Eventually consistent", ["Balanced, Atomic, Secure, Encrypted", "Binary, Async, Sharded, Embedded", "Basic Access, Simple Execution"], "BASE trades strict consistency for availability."),
+        ("medium", "What is eventual consistency?", "All copies become consistent once no new updates arrive", ["Every read always sees the latest write", "Data is never copied", "Writes are rejected under load"], "Replicas may briefly disagree but converge over time."),
+        ("medium", "What is denormalization?", "Storing duplicated data together to avoid joins", ["Splitting data into many tables", "Deleting duplicate records", "Encrypting data at rest"], "Denormalized data is faster to read but must be kept in sync."),
+        ("medium", "Which use case suits a key-value store such as Redis best?", "Caching and session storage", ["Complex multi-table reports", "Graph traversal", "Relational joins"], "Fast lookups by key make Redis ideal for caches and sessions."),
+        ("hard", "What is horizontal scaling?", "Adding more servers to share the load", ["Upgrading one server's CPU and RAM", "Adding columns to a table", "Removing indexes"], "Horizontal scaling grows capacity by adding machines."),
+        ("hard", "In a wide-column store, related columns are grouped into...", "column families", ["collections", "nodes and edges", "worksheets"], "Column families hold related columns for each row key."),
+        ("hard", "What is a partition (shard) key used for?", "Deciding which node stores each record", ["Encrypting each record", "Sorting query results", "Naming the database"], "The key's value maps each record to a partition."),
+        ("hard", "Which read consistency does Amazon DynamoDB use by default?", "Eventually consistent reads", ["Strongly consistent reads only", "No consistency guarantee", "Serializable transactions only"], "Strongly consistent reads must be requested explicitly."),
+        ("hard", "During a network partition, a CP system chooses...", "consistency over availability", ["availability over consistency", "neither", "both in full"], "CP systems refuse some requests rather than return stale data."),
+    ],
+    "Django": [
+        ("easy", "Which command starts the development server?", "python manage.py runserver", ["python manage.py start", "django run", "python server.py"], "runserver serves the project on http://127.0.0.1:8000/ by default."),
+        ("easy", "Which command creates a new app inside a project?", "python manage.py startapp", ["django-admin newapp", "python manage.py createapp", "pip install app"], "startapp generates the app's files."),
+        ("easy", "Which file holds project configuration such as INSTALLED_APPS?", "settings.py", ["config.json", "urls.py", "manage.py"], "settings.py holds the project's configuration."),
+        ("easy", "Which command creates an admin account?", "python manage.py createsuperuser", ["python manage.py adduser", "python manage.py admin", "django-admin login"], "createsuperuser makes a user with full admin rights."),
+        ("medium", "Which ORM method returns rows matching a condition?", "Model.objects.filter()", ["Model.objects.where()", "Model.objects.find()", "Model.objects.match()"], "filter() returns a QuerySet of matching rows."),
+        ("medium", "Which ORM method returns exactly one object and raises an error if none match?", "get()", ["first()", "filter()", "one()"], "get() raises DoesNotExist or MultipleObjectsReturned."),
+        ("medium", "Where are a project's apps registered?", "INSTALLED_APPS in settings.py", ["apps.py of each app", "urls.py", "requirements.txt"], "Django loads models and migrations only for installed apps."),
+        ("medium", "Which model field stores a date and time?", "DateTimeField", ["DateField", "TimeStampField", "DateTimeColumn"], "DateField stores only a date; DateTimeField adds the time."),
+        ("hard", "What does middleware do in Django?", "Processes every request and response globally", ["Defines database tables", "Stores static files", "Writes migrations"], "Middleware hooks run around every view."),
+        ("hard", "Which setting lists the host names the site may serve?", "ALLOWED_HOSTS", ["DEBUG_HOSTS", "SITE_HOSTS", "SERVER_NAMES"], "Requests for other hosts are rejected when DEBUG is False."),
+        ("hard", "What does select_related() do?", "Fetches related objects in the same query with a SQL join", ["Deletes related objects", "Selects random rows", "Caches the whole table"], "It avoids one extra query per related object."),
+        ("hard", "Which DRF setting controls how API errors are formatted?", "EXCEPTION_HANDLER", ["ERROR_VIEW", "DEFAULT_RENDERER_CLASSES", "DEBUG_PROPAGATE"], "A custom exception handler can reshape every error response."),
+        ("hard", "Why must DEBUG be False in production?", "Error pages would otherwise expose code and settings", ["The site only runs faster", "Migrations require it", "Static files need it"], "Debug pages show tracebacks and configuration to anyone."),
+    ],
+    "Docker": [
+        ("easy", "Which command downloads an image from a registry?", "docker pull", ["docker get", "docker fetch", "docker download"], "docker pull fetches an image, by default from Docker Hub."),
+        ("easy", "Which command builds an image from a Dockerfile?", "docker build", ["docker make", "docker compile", "docker image"], "docker build -t name . builds and tags an image."),
+        ("easy", "Which command stops a running container?", "docker stop", ["docker end", "docker quit", "docker halt"], "docker stop sends SIGTERM, then SIGKILL after a timeout."),
+        ("easy", "What is Docker Hub?", "A public registry for sharing images", ["A container runtime", "A Dockerfile editor", "A load balancer"], "Docker Hub hosts official and community images."),
+        ("medium", "Which Dockerfile instruction copies files from the build context into the image?", "COPY", ["MOVE", "ADDFILE", "IMPORT"], "COPY src dest copies files into the image."),
+        ("medium", "Which Dockerfile instruction sets the working directory for later instructions?", "WORKDIR", ["CD", "DIR", "PATH"], "WORKDIR also creates the directory if it is missing."),
+        ("medium", "Which tool runs a multi-container app defined in a YAML file?", "Docker Compose", ["Docker Hub", "docker inspect", "Docker Machine"], "docker compose up starts every service in compose.yaml."),
+        ("medium", "Which command shows a container's output logs?", "docker logs", ["docker output", "docker print", "docker tail"], "docker logs -f follows the output live."),
+        ("hard", "What is the main benefit of a multi-stage build?", "Smaller final images without the build tools", ["Faster container start-up only", "Running several containers at once", "Automatic scaling"], "Only the artefacts copied into the last stage end up in the image."),
+        ("hard", "How do CMD and ENTRYPOINT differ?", "ENTRYPOINT sets the executable; CMD gives default arguments that can be overridden", ["They are identical", "CMD runs at build time and ENTRYPOINT at run time", "ENTRYPOINT is only for Windows images"], "docker run arguments replace CMD but are passed to ENTRYPOINT."),
+        ("hard", "Why is a .dockerignore file useful?", "It keeps unneeded files out of the build context", ["It hides containers from docker ps", "It ignores failed builds", "It turns off logging"], "A smaller context builds faster and avoids leaking files."),
+        ("hard", "Why does the order of Dockerfile instructions affect build speed?", "Docker caches layers, so unchanged early steps are reused", ["Docker sorts instructions alphabetically", "Later instructions run in parallel", "Order only changes the image name"], "Put rarely changing steps, such as installing dependencies, first."),
+        ("hard", "Which network lets containers on one host reach each other by container name?", "A user-defined bridge network", ["The none network", "The host network only", "A volume"], "User-defined bridges provide built-in DNS by container name."),
+    ],
+}
+
+
 def _build():
     questions, qid = [], 1
-    for topic in TOPICS:
-        for difficulty, text, correct, wrong, why in _RAW[topic]:
-            pos = qid % 4
-            options = list(wrong)
-            options.insert(pos, correct)
-            questions.append(
-                {
-                    "id": qid,
-                    "topic": topic,
-                    "difficulty": difficulty,
-                    "question": text,
-                    "options": dict(zip(LETTERS, options)),
-                    "correct_answer": LETTERS[pos],
-                    "explanation": why,
-                }
-            )
-            qid += 1
+    for raw in (_RAW, _RAW_EXTRA):
+        for topic in TOPICS:
+            for difficulty, text, correct, wrong, why in raw[topic]:
+                pos = qid % 4
+                options = list(wrong)
+                options.insert(pos, correct)
+                questions.append(
+                    {
+                        "id": qid,
+                        "topic": topic,
+                        "difficulty": difficulty,
+                        "question": text,
+                        "options": dict(zip(LETTERS, options)),
+                        "correct_answer": LETTERS[pos],
+                        "explanation": why,
+                    }
+                )
+                qid += 1
     return questions
 
 
